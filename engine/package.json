@@ -1,0 +1,14 @@
+{
+  "name": "ohaeng-engine",
+  "version": "1.0.0",
+  "description": "오행연 사주분석/성향분석/궁합 엔진 (앱 프론트엔드에서 분리)",
+  "main": "src/index.js",
+  "scripts": {
+    "test": "node --test"
+  },
+  "license": "UNLICENSED",
+  "devDependencies": {
+    "esbuild": "^0.27.7",
+    "jsdom": "^24.0.0"
+  }
+}
