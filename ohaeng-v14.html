@@ -10664,13 +10664,27 @@ $$('#radarModeSwitch button').forEach(b=>b.addEventListener('click',()=>{
   drawRadar();
 }));
 
-// localStorage 영속화: 페이지 이탈/탭 숨김 시 저장, 부팅 시 복원 (단일 HTML 구조 유지)
+/* ── 영속화 레이어 ───────────────────────────────────────────────
+   현재 백엔드: localStorage. 나중에 Supabase(B안)로 옮길 땐
+   storage.load / storage.save 두 메서드 본문만 교체하면 됨.
+   - 직렬화는 snapshot()/applySnapshot() 한 곳으로만 (DB 행 ↔ 객체 매핑 지점)
+   - version + migrate()로 스키마 변경에 대비
+   - 각 멤버에 stable id 부여 (DB 행 PK용; 지금은 myIdx 인덱스도 병행) */
 const LS_KEY='ohaeng-v14';
-function saveState(){try{localStorage.setItem(LS_KEY,JSON.stringify({state,myIdx}));}catch(e){}}
-function loadState(){try{const raw=localStorage.getItem(LS_KEY);if(!raw)return;const o=JSON.parse(raw);if(o&&o.state){state.team=o.state.team||state.team;state.members=o.state.members||[];state.groups=o.state.groups||[];state.leaderIdx=o.state.leaderIdx==null?null:o.state.leaderIdx;myIdx=o.myIdx==null?null:o.myIdx;}}catch(e){}}
+const STORAGE_VERSION=1;
+const storage={
+  async load(){try{const raw=localStorage.getItem(LS_KEY);return raw?migrate(JSON.parse(raw)):null;}catch(e){return null;}},
+  async save(snap){try{localStorage.setItem(LS_KEY,JSON.stringify(snap));}catch(e){}}
+};
+function migrate(snap){return snap;} // 버전별 마이그레이션 자리 (지금은 v1 그대로)
+function newId(){return (self.crypto&&crypto.randomUUID)?crypto.randomUUID():'m_'+Date.now().toString(36)+Math.random().toString(36).slice(2,8);}
+function ensureIds(){state.members.forEach(m=>{if(!m.id)m.id=newId();});}
+function snapshot(){ensureIds();return{version:STORAGE_VERSION,state,myIdx};}
+function applySnapshot(snap){if(!snap||!snap.state)return;state.team=snap.state.team||state.team;state.members=snap.state.members||[];state.groups=snap.state.groups||[];state.leaderIdx=snap.state.leaderIdx==null?null:snap.state.leaderIdx;myIdx=snap.myIdx==null?null:snap.myIdx;}
+function saveState(){storage.save(snapshot());}
 window.addEventListener('beforeunload',saveState);
 document.addEventListener('visibilitychange',()=>{if(document.visibilityState==='hidden')saveState();});
-loadState();renderEmpSurvey();renderOwner();switchView('home');
+storage.load().then(snap=>{applySnapshot(snap);ensureIds();}).finally(()=>{renderEmpSurvey();renderOwner();switchView('home');});
 </script>
 </body>
 </html>
