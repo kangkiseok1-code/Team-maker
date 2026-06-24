@@ -23,13 +23,13 @@
 ```
 ohaeng-project/
   CLAUDE.md                 ← 이 파일 (프로젝트 가이드)
-  ohaeng-v14.html           ← 실제 앱 (단일 파일 HTML, 빈 상태)
-  ohaeng-v14-demo.html      ← 데모 앱 (가상 인물 10명 사주가 미리 채워짐)
+  team-maker.html           ← 실제 앱 (단일 파일 HTML, 빈 상태)
+  team-maker-demo.html      ← 데모 앱 (가상 인물 10명 사주가 미리 채워짐)
   engine/
     SESSION_SUMMARY.md      ← 세션 간 연속성. 매 세션 끝에 갱신.
     package.json            ← test 스크립트: "node --test"
     build.js                ← esbuild로 src/index.browser.js를 OhaengEngine 전역으로 번들링
-    update-app.js           ← build + ohaeng-v14.html 첫 <script>에 번들 끼워넣기 (한 방에)
+    update-app.js           ← build + team-maker.html 첫 <script>에 번들 끼워넣기 (한 방에)
     gen-demo-members.js     ← 데모용 가상 인물 10명 생성 (시드 고정, 엔진으로 실제 계산)
     src/
       index.js              ← Node용 전체 엔트리 (모든 모듈)
@@ -61,8 +61,8 @@ ohaeng-project/
 cd engine
 npm install            # 최초 1회 (esbuild, jsdom 등)
 node --test            # 단위 테스트 75개
-node update-app.js                    # ../ohaeng-v14.html 갱신 (기본 경로)
-node update-app.js ../ohaeng-v14.html # 경로 명시도 가능
+node update-app.js                    # ../team-maker.html 갱신 (기본 경로)
+node update-app.js ../team-maker.html # 경로 명시도 가능
 ```
 
 `update-app.js`가 하는 일: ①번들링 → ②html 첫 `<script>` 교체 → ③`node --check` 문법 검증 → ④덮어쓰기. idempotent(두 번 돌려도 안전).
@@ -88,7 +88,7 @@ node update-app.js ../ohaeng-v14.html # 경로 명시도 가능
 5. **유파차 명시 원칙.** 학파 간 이견이 있는 구현은 임의 결정하지 않고 명시적으로 플래그.
    예: `johu.js`의 `isSimplified:true`, 야자시 기본값 꺼짐(`{yajasi:true}` 옵션).
 
-6. **데모 버전 동반 갱신.** `ohaeng-v14.html`을 수정할 때마다 `ohaeng-v14-demo.html`도
+6. **데모 버전 동반 갱신.** `team-maker.html`을 수정할 때마다 `team-maker-demo.html`도
    같은 변경 기준으로 함께 갱신한다. (데모는 `gen-demo-members.js`로 실제 계산해 채움)
 
 7. **기존 호출부 보호.** 시그니처가 바뀐 함수는 얇은 래퍼로 기존 호출부 수정을 최소화.
@@ -148,5 +148,5 @@ node update-app.js ../ohaeng-v14.html # 경로 명시도 가능
 
 - [ ] `engine/SESSION_SUMMARY.md`를 이번 세션 기준으로 갱신했는가
 - [ ] `node --test` 전부 통과하는가
-- [ ] `ohaeng-v14.html`과 `ohaeng-v14-demo.html` 둘 다 갱신했는가
+- [ ] `team-maker.html`과 `team-maker-demo.html` 둘 다 갱신했는가
 - [ ] 위 "다음 후보 작업" 목록을 최신화했는가

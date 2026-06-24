@@ -1,5 +1,5 @@
-// 엔진을 번들링하고, 그 번들을 ohaeng-v14.html의 첫 <script>에 통째로 끼워넣는 걸 한 번에 한다.
-// 사용법: node update-app.js [html경로]  (생략하면 ../ohaeng-v14.html을 기본으로 봄)
+// 엔진을 번들링하고, 그 번들을 team-maker.html의 첫 <script>에 통째로 끼워넣는 걸 한 번에 한다.
+// 사용법: node update-app.js [html경로]  (생략하면 ../team-maker.html을 기본으로 봄)
 //
 // 무엇을 하는지:
 //   1) build.js와 동일하게 esbuild로 src/index.browser.js를 OhaengEngine 전역으로 번들링
@@ -12,11 +12,11 @@ const path = require('path');
 const { execFileSync } = require('child_process');
 
 const ENGINE_DIR = __dirname;
-const htmlPath = path.resolve(process.argv[2] || path.join(ENGINE_DIR, '..', 'ohaeng-v14.html'));
+const htmlPath = path.resolve(process.argv[2] || path.join(ENGINE_DIR, '..', 'team-maker.html'));
 
 if (!fs.existsSync(htmlPath)) {
   console.error(`html 파일을 못 찾았어요: ${htmlPath}`);
-  console.error('node update-app.js <ohaeng-v14.html 경로> 로 직접 지정해주세요.');
+  console.error('node update-app.js <team-maker.html 경로> 로 직접 지정해주세요.');
   process.exit(1);
 }
 
@@ -35,7 +35,7 @@ const bundle = fs.readFileSync(path.join(ENGINE_DIR, 'dist/ohaeng-engine.browser
 console.log(`    번들 크기: ${(bundle.length / 1024).toFixed(0)}KB`);
 
 // 2) html의 첫 <script> 블록 찾아서 교체
-console.log('2/4 ohaeng-v14.html의 첫 <script> 교체 중...');
+console.log('2/4 team-maker.html의 첫 <script> 교체 중...');
 const html = fs.readFileSync(htmlPath, 'utf8');
 const lines = html.split('\n');
 const startIdx = lines.findIndex(l => l.trim() === '<script>');
