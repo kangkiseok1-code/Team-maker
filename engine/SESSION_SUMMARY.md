@@ -1,5 +1,57 @@
 # 오행연 엔진 작업 요약
 
+> **참고**: 앱 이름이 "오행연"에서 **"팀 메이커 / Team Maker"**로 리브랜딩됨(2026-06-24).
+> 파일명도 `ohaeng-v14.html` → **`team-maker.html`**, `ohaeng-v14-demo.html` → **`team-maker-demo.html`**.
+> 아래 옛 기록의 `ohaeng-v14*.html`은 모두 현재 `team-maker*.html`를 가리킴.
+> 엔진 전역 변수명 `OhaengEngine`과 빌드 산출물 `dist/ohaeng-engine.browser.js`는 코드라 그대로 유지.
+
+---
+
+## 세션 (2026-06-24, 최신): 영속화·B안 호환·리브랜딩·배포·코드 교환 초대
+
+이번 세션 목표는 **"실제로 사용 가능하게 배포"**. 사장님이 A안(정적 호스팅 + localStorage)으로
+빠르게 띄우되, 나중에 B안(Supabase 백엔드)으로 쉽게 갈아탈 수 있는 구조로 가기로 결정.
+
+**1. localStorage 영속화** (다음 후보 1순위였던 항목 완료)
+- 변경 지점이 곳곳에 흩어져 있어, 개별 mutation을 쫓지 않고 `beforeunload`·`visibilitychange(hidden)`
+  시점에 통째로 저장 + 부팅 시 복원. "새로고침하면 데이터 사라짐" 문제 해결. 데모/앱 별도 키.
+- 한계(B 시점에 강화): 브라우저 강제종료 시 마지막 변경 유실 가능. 개인용엔 충분.
+
+**2. B안 호환을 위한 영속화 레이어 분리** (저비용 선반영)
+- `storage.load/save` 두 메서드만 교체하면 백엔드 전환 가능(async 시그니처라 호출부 불변).
+- `snapshot()`/`applySnapshot()`로 직렬화 경계 단일화. `version`+`migrate()` 스텁.
+- 각 멤버에 stable **UUID `id`** 부여(`ensureIds()`, snapshot 시 backfill) — DB 행 PK 대비.
+- **의도적 보류(B 시점)**: 인덱스(`myIdx`/`leaderIdx`/`group.memberIdx`)→id 전면 전환, 인증/RLS,
+  per-mutation 저장. 데이터 모델(멤버 객체 배열)은 이미 DB 친화적이라 경계만 격리하면 됨.
+
+**3. Team Maker 리브랜딩** (화면상 "Ohaeng" 전부 제거)
+- 홈 히어로 제목 "타고난 결로 팀을 읽다"→**"팀 메이커 / Team Maker"**, 설명서 "사주가 보여주는" 제거.
+- 좌측 상단 브랜드, 소개 문단("Ohaeng은…"), 푸터, `<title>`, 랜딩 `index.html`까지 모두 Team Maker로.
+- 파일명 git mv + 참조 갱신(index.html 링크, update-app.js 기본 경로, CLAUDE.md).
+- **부수 발견**: update-app.js 재실행 중 엔진↔앱 드리프트 발견 — `relations.js`의 "형(부분)"
+  (`punishTrioPartial`)이 인라인 번들에 누락돼 있던 걸 동기화. 엔진 테스트 79개 통과.
+
+**4. GitHub Pages 배포** (A안 1차 목표 달성)
+- `index.html` 랜딩(데모·앱 링크) 추가, `.gitignore`(node_modules/dist/.claude 제외), git 초기화.
+- repo: **https://github.com/kangkiseok1-code/Team-maker** (public). main 브랜치 push 완료.
+- Pages는 사장님이 Settings→Pages에서 활성화(브라우저 인증 필요해 수동). 토큰 직접추출은 보안차단됨.
+- **라이브 주소: https://kangkiseok1-code.github.io/Team-maker/**
+  (데모 `/team-maker-demo.html`, 앱 `/team-maker.html`)
+
+**5. 코드 교환 방식 초대 흐름** (A안 한계의 현실적 해법)
+- 핵심 한계 직시: 서버가 없으니 "초대 링크만"으론 직원 데이터가 사장님 팀보드로 못 돌아옴
+  (브라우저 localStorage 격리). → **수동 코드 교환**으로 우회(서버 없이 실제 작동).
+- 흐름: 사장님 "초대 링크 만들기"→ 배포주소+`#join`(열면 직원 입력화면 자동) → 직원이 진단 →
+  "결과 코드 복사"(`TM1:`+base64 utf8 json) → 카톡 전송 → 사장님 "직원 코드 받기"에 붙여넣어 추가.
+- `memberToCode`/`codeToMember`/`importMemberCode`. 같은 id면 교체(중복방지), 잘못된 코드 거부.
+- **B안 전환 시**: 이 세 함수 자리가 "서버 저장/조회"로 승격, `#join`→`?team=토큰`으로 확장.
+- 알려진 약점: 코드가 수 KB라 SMS는 잘릴 수 있음(카톡 OK). 필요 시 gzip/QR 추가 가능.
+
+**커밋 흐름**(이번 세션): localStorage → storage 레이어 → 홈 이름 → 파일명/브랜드+번들동기화 →
+소개문구 → 푸터 → 초대 코드교환 → 랜딩 제목. 모두 main에 push됨.
+
+---
+
 ## 오늘(이번 대화) 한 일 한 줄 요약
 엔진과 앱이 손-복사로 따로 동기화되며 자꾸 어긋나던 문제를 빌드 파이프라인으로 해결하고,
 직원이 자기 성향 검사 문항 수를 고르고, 지지관계(합·충·형)와 용신 동률을 보고,
@@ -163,12 +215,19 @@ engine/
 ---
 
 ## 다음에 할 수 있는 것 (후보 목록)
-1. **`ohaeng-v14-invite.html` 마무리**: 훨씬 이전부터 미완성 상태로 남아있음. (가장 오래된 미완료 항목)
-2. **localStorage 영구 저장**: state를 localStorage에 자동 저장/복원. 새로고침해도 데이터 유지.
+- ~~localStorage 영구 저장~~ ✅ 완료 (이번 세션)
+- ~~GitHub Pages 배포~~ ✅ 완료 (이번 세션, https://kangkiseok1-code.github.io/Team-maker/)
+- ~~초대 흐름(코드 교환)~~ ✅ 완료 (이번 세션, A안 방식)
+
+1. **B안(Supabase 백엔드)로 전환**: 가장 큰 다음 단계. `storage.load/save` 교체 + 인덱스→id 참조
+   전환 + 로그인/RLS(직원=자기 데이터 소유). 이번에 호환 구조(storage 레이어·UUID id)는 깔아둠.
+   완료되면 코드 교환 초대가 자동 동기화로 승격됨.
+2. **`team-maker-invite.html` 마무리**: 전용 초대 랜딩 페이지(가장 오래된 미완료). 단, 이번에
+   `#join` 해시로 직원 입력화면을 바로 여는 방식으로 일부 대체됨 — 별도 페이지가 여전히 필요한지 재검토.
 3. **신살·조후를 앱에 노출할지 결정**: 12운성은 이미 포팅, 신살·조후는 아직 엔진에만 있음.
 4. **신살/삼합 등 "강한 영향" 관계의 강도(weight) 체계**: 합·충까지 포함한 전체 강도 등급 — 기석님 임상 기준으로 설계 예정.
 5. **지장간 활성 구간 계산**: 절기 진행도 기준 사령법 — 본기만 표시 중, 정밀화 필요 시 추가.
-6. **백엔드/엔진 실제 API 배포**: 현재는 단일 HTML에 번들 끼워넣기 방식.
-7. **Phase 2 구인구직 모드**: 기획요약 문서의 다음 단계.
-8. **야자시 기준 시각**: 진태양시 보정 후 시각 기준 검토 (유파차).
+6. **Phase 2 구인구직 모드**: 기획요약 문서의 다음 단계.
+7. **야자시 기준 시각**: 진태양시 보정 후 시각 기준 검토 (유파차).
+8. **코드 교환 강화**: 코드가 수 KB라 SMS 잘림 가능 — gzip 압축(`CompressionStream`)이나 QR코드 표시.
 9. **사주 콘텐츠 마케팅(네이버 블로그)**: 코드와 별개 트랙.
